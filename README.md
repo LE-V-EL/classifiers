@@ -1,7 +1,10 @@
 # classifiers
 
 ** First time installation **
-```git submodule init
+```
+conda env create -f env.yml
+
+git submodule init
 git submodule update
 cd externals/detectron2 && pip install -e .
 ```
