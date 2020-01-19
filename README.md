@@ -2,7 +2,7 @@
 
 ** First time installation **
 ```
-conda env create -f environment.yml
+conda env create -f env.yml
 
 git submodule init
 git submodule update
