@@ -2,7 +2,9 @@ import os,sys,time
 
 # we need access to the MaskR-CNN code
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../external/mask_rcnn/'))
+import tensorflow as tf
 
+tf.keras
 # Mask R-CNN
 from mrcnn.model import MaskRCNN
 from mrcnn.config import Config
@@ -68,12 +70,12 @@ class MaskR:
 
 
 
-    def train(self, dataset_train, dataset_val, epochs=1):
+    def train(self, dataset_train, dataset_val,history, epochs=1):
         '''
         '''
         t0 = time.time()
 
-        self.model.train(dataset_train, dataset_val,
+        self.model.train(dataset_train, dataset_val,custom_callbacks=[history],
                          learning_rate=self.config.LEARNING_RATE,
                          epochs=epochs,
                          layers='heads')
