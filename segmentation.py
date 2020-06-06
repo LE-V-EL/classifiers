@@ -1,6 +1,10 @@
 from perception import maskr as m
 from perception import angledataset as a
 from ResultAnalyser import ResultAnalyzer
+from keras.callbacks import History
+import pickle
+from sklearn.metrics import mean_squared_error
+from mrcnn import visualize
 import matplotlib
 matplotlib.use('agg')
 
@@ -26,39 +30,56 @@ class segmentation:
     def trainMaskRCNN(self,epochs,dataset):
         maskrcnn = m.MaskR()
         path = dataset + "/"
+        history = History()
         train_file = DatasetFromFile(path + "train_0.npz").load_from_file()
         val_file   = DatasetFromFile(path + "val_0.npz").load_from_file()
-        maskrcnn.train(train_file, val_file, epochs=epochs)
-        return maskrcnn
+        maskrcnn.train(train_file, val_file,history, epochs=epochs)
+        return maskrcnn, history
 
-    def predictMaskRCNN(self,ANY_INDEX,test,maskrcnn,model_path,weight_path):
+    def predictMaskRCNN(self,ANY_INDEX,test,maskrcnn,weight_path):
         x_test = test.load_image(ANY_INDEX)
         y_test = test.image_info[ANY_INDEX]['angles']
         maskrcnn_results = maskrcnn.predict([x_test], verbose=False)
         result_analyzer = ResultAnalyzer()
-        load_model = result_analyzer.LoadModelfromLocal(model_path,weight_path)
-        from mrcnn import visualize
-        r = maskrcnn_results[0]  # we only have one result since we only used one image to test
+        load_model = result_analyzer.LoadModelfromLocal(weight_path)
+
+        r = maskrcnn_results[0]
         visualize.display_instances(x_test, r['rois'], r['masks'], r['class_ids'],
                                     test.class_names, r['scores'])
 
         y_pred = load_model.predict([x_test], [maskrcnn_results])
-        from sklearn.metrics import mean_squared_error
-        mean_squared_error(y_test, y_pred[0])
+
+        return mean_squared_error(y_test, y_pred[0])
+
+    def saveHistoryToLocalFile(self,path,history):
+        with open(path, 'wb') as file:
+            pickle.dump(history, file, pickle.HIGHEST_PROTOCOL)
+        return 0
+
+    def loadHistoryFromLocalFile(self,path):
+        with open(path, 'rb') as file:
+            history = pickle.load(file)
+        return history
+
 
     def testTrainedModel(self,dataset,weights_path):
         segmentation_pipeline = segmentation()
+        result_analyzer=ResultAnalyzer()
         path = dataset + "/"
         test = DatasetFromFile(path + "test_0.npz").load_from_file()
-        maskrcnn = result_analyzer.LoadModelfromLocal(model_path, weights_path)
-        segmentation_pipeline.predictMaskRCNN(10, maskrcnn, test, model_path, weights_path)
+
+        maskrcnn = result_analyzer.LoadModelfromLocal(weights_path)
+        segmentation_pipeline.predictMaskRCNN(10, maskrcnn, test, weights_path)
 
 def main():
     print("-----LEVEL TRAINING PIPELINE-----")
     parser = argparse.ArgumentParser("level")
     parser.add_argument("dataset", help="dataset can be any one of:  angle or area or curvature or direction or length or position_common_scale or position_non_aligned_scale or volume ", type=str)
-    parser.add_argument("path", help=" Path to store the model", type=str)
+    parser.add_argument("path", help="dataset file path", type=str)
     parser.add_argument("epoch", help="val data count", type=int)
+    parser.add_argument("historypath", help="local folder path to save history", type=int)
+    parser.add_argument("weightspath", help="local folder path to load weights", type=int)
+
     args = parser.parse_args()
     dataset_path=''
     if args.dataset == "angle":
@@ -79,21 +100,25 @@ def main():
         dataset_path = args.path + '/' + 'volume'
 
     segmentation_pipeline = segmentation()
-    result = segmentation_pipeline.trainMaskRCNN(args.epoch, dataset_path)
+    result, history = segmentation_pipeline.trainMaskRCNN(args.epoch, dataset_path)
+    #saving the history
+    res = segmentation_pipeline.saveHistoryToLocalFile(history,args.historypath)
+    if res==0:
+        print("saved history succesfully")
+    else:
+        print("saving history error")
+
+    #get history from local and visualize
+    hist = segmentation_pipeline.loadHistoryFromLocalFile(args.historypath)
+    result_analyzer = ResultAnalyzer()
+    result_analyzer.plotAccuracy(hist)
+
+    #load model and predict
+    mse = segmentation_pipeline.testTrainedModel(dataset_path,args.weightspath)
+    print("Mean square error from model" + str(mse))
 
 
 if __name__ == '__main__':
     main()
 
 
-
-
-
-
-
-#save model
-result_analyzer = ResultAnalyzer()
-model_path='/models'
-#result_analyzer.saveModels("segementationMaskRCNN",result,model_path,1000)
-
-#load model and predict

@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from keras.utils import plot_model
-from keras.models import model_from_json
+from keras.models import load_model
 
 class ResultAnalyzer:
     def __init__(self):
@@ -35,14 +35,8 @@ class ResultAnalyzer:
         model.summary()
         plot_model(model, to_file=filename, show_shapes=True, show_layer_names=True)
 
-    def LoadModelfromLocal(self,model_path, model_weights):
-        # load json and create model
-        json_file = open(model_path, 'r')
-        loaded_model_json = json_file.read()
-        json_file.close()
-        loaded_model = model_from_json(loaded_model_json)
-        # load weights into new model
-        loaded_model.load_weights(model_weights)
-        print("Loaded model from models sub folder")
+    def LoadModelfromLocal(self,model_weights):
+        loaded_model = load_model(model_weights)
+        print("model loaded successfully")
         return loaded_model
 
