@@ -52,8 +52,8 @@ class segmentation:
         return mean_squared_error(y_test, y_pred[0])
 
     def saveHistoryToLocalFile(self,path,history):
-        with open(path, 'wb') as file:
-            pickle.dump(history, file, pickle.HIGHEST_PROTOCOL)
+        with open(path + "/history.p", 'wb') as file:
+            pickle.dump(history.history, file, pickle.HIGHEST_PROTOCOL)
         return 0
 
     def loadHistoryFromLocalFile(self,path):
@@ -77,8 +77,8 @@ def main():
     parser.add_argument("dataset", help="dataset can be any one of:  angle or area or curvature or direction or length or position_common_scale or position_non_aligned_scale or volume ", type=str)
     parser.add_argument("path", help="dataset file path", type=str)
     parser.add_argument("epoch", help="val data count", type=int)
-    parser.add_argument("historypath", help="local folder path to save history", type=int)
-    parser.add_argument("weightspath", help="local folder path to load weights", type=int)
+    parser.add_argument("historypath", help="local folder path to save history", type=str)
+    parser.add_argument("weightspath", help="local folder path to load weights", type=str)
 
     args = parser.parse_args()
     dataset_path=''
@@ -102,14 +102,14 @@ def main():
     segmentation_pipeline = segmentation()
     result, history = segmentation_pipeline.trainMaskRCNN(args.epoch, dataset_path)
     #saving the history
-    res = segmentation_pipeline.saveHistoryToLocalFile(history,args.historypath)
+    res = segmentation_pipeline.saveHistoryToLocalFile(args.historypath, history)
     if res==0:
         print("saved history succesfully")
     else:
         print("saving history error")
 
     #get history from local and visualize
-    hist = segmentation_pipeline.loadHistoryFromLocalFile(args.historypath)
+    hist = segmentation_pipeline.loadHistoryFromLocalFile(args.historypath + "/history.p")
     result_analyzer = ResultAnalyzer()
     result_analyzer.plotAccuracy(hist)
 

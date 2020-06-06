@@ -1,3 +1,6 @@
 [submodule "externals/detectron2"]
 	path = externals/detectron2
 	url = git@github.com:LE-V-EL/detectron2.git
+[submodule "externals/generators"]
+	path = externals/generators
+	url = https://github.com/LE-V-EL/generators

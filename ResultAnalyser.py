@@ -16,8 +16,8 @@ class ResultAnalyzer:
         plt.savefig('images/loss_epoch_%d.png' % epoch)
 
     def plotAccuracy(self,history):
-        plt.plot(history.history['acc'])
-        plt.plot(history.history['val_acc'])
+        plt.plot(history['acc'])
+        plt.plot(history['val_acc'])
         plt.title('model accuracy')
         plt.ylabel('accuracy')
         plt.xlabel('epoch')
