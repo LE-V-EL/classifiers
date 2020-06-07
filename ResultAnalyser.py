@@ -1,23 +1,24 @@
 import matplotlib.pyplot as plt
 from keras.utils import plot_model
 from keras.models import load_model
+import pickle
 
 class ResultAnalyzer:
     def __init__(self):
         pass
 
     # Plot the loss from each batch
-    def plotLoss(self, epoch,Losses):
+    def plotLoss(self, epoch,history):
         plt.figure(figsize=(10, 8))
-        plt.plot(Losses, label='loss')
+        plt.plot(history['loss'], label='loss')
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
         plt.legend()
         plt.savefig('images/loss_epoch_%d.png' % epoch)
 
     def plotAccuracy(self,history):
-        plt.plot(history['acc'])
-        plt.plot(history['val_acc'])
+        plt.plot(history['loss'])
+        plt.plot(history['val_loss'])
         plt.title('model accuracy')
         plt.ylabel('accuracy')
         plt.xlabel('epoch')
@@ -39,4 +40,14 @@ class ResultAnalyzer:
         loaded_model = load_model(model_weights)
         print("model loaded successfully")
         return loaded_model
+
+    def saveHistoryToLocalFile(self,path,history):
+        with open(path + "/history.p", 'wb') as file:
+            pickle.dump(history.history, file, pickle.HIGHEST_PROTOCOL)
+        return 0
+
+    def loadHistoryFromLocalFile(self,path):
+        with open(path, 'rb') as file:
+            history = pickle.load(file)
+        return history
 
