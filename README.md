@@ -5,9 +5,9 @@ To run segmentation pipeline
  2. conda env create -f env.yml
  3. conda activate env_name	
  4. get the npz files to local 
- 5. python3 segmentation.py dataset_name npz_path number_of_epochs history_file_path
+ 5. python3 segmentation.py dataset_name npz_path number_of_epochs history_file_path gpu
  
  For example:
-    python3 segmentation.py angle /home/aswin/Desktop/output 1 /history
+    python3 segmentation.py angle /home/aswin/Desktop/output 1 /history 0 
  
  

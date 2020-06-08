@@ -1,0 +1,50 @@
+<!-- You must include this JavaScript file -->
+<script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+
+<!-- For the full list of available Crowd HTML Elements and their input/output documentation,
+      please refer to https://docs.aws.amazon.com/sagemaker/latest/dg/sms-ui-template-reference.html -->
+
+<!-- You must include crowd-form so that your task submits answers to MTurk -->
+<crowd-form answer-format="flatten-objects">
+
+    <p style="text-align:center;">
+      <b>Angle Annotation </b>
+    <br>
+    <p>
+      <b> Objective: </b> The below image contains 4 angles in it from left to right. The approximate estimation of each angle should be entered in the textbox below. 
+      The protractor scale given to the left can used as measure for estimating the angle.
+    </p>
+    <br>
+    <p style="text-align:center;">
+    <img src="https://testbucket.s3.amazonaws.com/images/sample/sample/protractor.jpg" style="max-width: 20%; max-height: 250px" /></p>
+    </p>
+    <p>
+      <b> Instruction: </b> <br><br>
+      
+      1. The below image contains 4 angles in it from left to right.<br>
+      2. From left estimate the angle of the first one and enter the value in first box.<br>
+      3. Similarly complete all 4 angles in each image.<br>
+      4. Then move to the next image and continue the same.<br>
+      5. After completing all the images  hit submit.<br>
+      </p>
+    
+    <b> Sample Example </b><br>
+    
+    <p><img src="https://testbucket.s3.amazonaws.com/images/sample/sample/figure.png" style="max-width: 100%; max-height: 250px" /> <br><br>
+    <input width="10" height="40" value="54" name="tag1"></input> <br><br>
+    <input width="10" height="40" value="3" name="tag2"></input> <br><br>
+    <input width="10" height="40" value="11" name="tag3" required></input> <br><br>
+    <input width="10" height="40" value="9" name="tag4" required></input> <br> <br>
+    
+    <b> Actual annotation for turkers: </b> <br>
+    
+    <p><img src="${image_url}" style="max-width: 100%; max-height: 250px" /></p>
+
+    <crowd-input label="Enter first angle" name="summary1" required></crowd-input>
+    <crowd-input label="Enter second angle" name="summary2" required></crowd-input>
+    <crowd-input label="Enter third angle" name="summary3" required></crowd-input>
+    <crowd-input label="Enter fourth angle" name="summary4" required></crowd-input>
+    
+    
+    
+</crowd-form>
