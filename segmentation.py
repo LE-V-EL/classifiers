@@ -6,6 +6,7 @@ from mrcnn import visualize
 import matplotlib.pyplot as plt
 import argparse
 from dataset import DatasetFromFile
+import os
 
 
 class segmentation:
@@ -26,6 +27,8 @@ class segmentation:
         history = History()
         train_file = DatasetFromFile(path + "train_0.npz").load_from_file()
         val_file = DatasetFromFile(path + "val_0.npz").load_from_file()
+
+
         maskrcnn.train(train_file, val_file, history, epochs=epochs)
         return maskrcnn, history
 
@@ -50,6 +53,7 @@ def main():
     parser.add_argument("path", help="dataset file path", type=str)
     parser.add_argument("epoch", help="val data count", type=int)
     parser.add_argument("historypath", help="local folder path to save history", type=str)
+    parser.add_argument("gpu", help="select the gpu", type=int)
 
     args = parser.parse_args()
     dataset_path = ''
@@ -71,7 +75,7 @@ def main():
         dataset_path = args.path + '/' + 'volume'
 
     segmentation_pipeline = segmentation()
-
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
     result, history = segmentation_pipeline.trainMaskRCNN(args.epoch, dataset_path)
     # saving the history
     result_analyzer = ResultAnalyzer()
