@@ -26,6 +26,7 @@ import numpy as np
 import os
 import sys
 import time
+from datetime import datetime
 
 
 class classifiers:
@@ -119,8 +120,6 @@ class classifiers:
 
         history = model.fit(X_train_3D, y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_val_3D, y_val),
                             callbacks=callbacks, verbose=True)
-
-        from datetime import datetime
         now = datetime.now()
         dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
 

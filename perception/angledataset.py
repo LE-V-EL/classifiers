@@ -1,13 +1,13 @@
 import os, sys
 
 # we need access to the MaskR-CNN code
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../external/mask_rcnn/'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../external/mask_rcnn/'))
 from mrcnn import utils
 from mrcnn import visualize
 
-# we need access to Ian's code
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../external/ian/'))
-from perception import figure5
+# we need access to generator's code
+sys.path.append(os.path.join(os.path.dirname(__file__), '../external/generators/'))
+import figure5
 
 import numpy as np
 

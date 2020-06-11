@@ -5,9 +5,12 @@
 #
 ################################################################
 
+import os, sys
 import numpy as np
 import time
 
+# gaining access to the generator code
+sys.path.append(os.path.join(os.path.dirname(__file__), 'external/generators/'))
 import figure5 as f5
 from classifiers import classifiers
 

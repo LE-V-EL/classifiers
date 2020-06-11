@@ -1,3 +1,5 @@
+
+import os, sys
 from perception import maskr as m
 from perception import angledataset as a
 from ResultAnalyser import ResultAnalyzer
@@ -5,8 +7,10 @@ from keras.callbacks import History
 from mrcnn import visualize
 import matplotlib.pyplot as plt
 import argparse
+
+# getting access to the generator code
+sys.path.append(os.path.join(os.path.dirname(__file__), 'external/generators/'))
 from dataset import DatasetFromFile
-import os
 
 
 class segmentation:

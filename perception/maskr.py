@@ -1,7 +1,7 @@
 import os,sys,time
 
 # we need access to the MaskR-CNN code
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../external/mask_rcnn/'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../external/mask_rcnn/'))
 import tensorflow as tf
 
 tf.keras
