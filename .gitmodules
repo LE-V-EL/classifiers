@@ -1,6 +1,6 @@
-[submodule "external/generators"]
-	path = external/generators
-	url = https://github.com/LE-V-EL/generators
 [submodule "external/mask_rcnn"]
 	path = external/mask_rcnn
 	url = git@github.com:LE-V-EL/Mask_RCNN.git
+[submodule "external/generators"]
+	path = external/generators
+	url = https://github.com/LE-V-EL/generators.git
