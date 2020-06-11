@@ -130,3 +130,5 @@ dmypy.json
 
 # data files
 *.h5
+*/weights/*
+*/images/*
