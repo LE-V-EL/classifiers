@@ -3,82 +3,111 @@ import os, sys, time
 import keras
 from keras.models import load_model
 
-import numpy as np
+import numpy  as np
+import pickle as p
 
 class VGG19Bridge:
 
-    def __init__(self, modelpath='tensorflow.js/models/VGG19_angle_full_variation/01_noise.h5'):
+    def __init__(self, model_dir=None, classifier='VGG19', file_name="vgg19weights.h5"):
         '''
         '''
         t0 = time.time()
-        self.model = load_model(os.path.join(os.path.dirname(__file__), modelpath))
-        print ('Setup complete after', time.time()-t0)
+
+        self.test_model = None
+
+        if model_dir is not None:
+            self.model_dir = model_dir
+        else:
+            self.model_dir = os.path.join(os.path.dirname(__file__))
+
+        if not os.path.exists(self.model_dir):
+            os.mkdir(self.model_dir)
+
+        self.model_file = os.path.join(model_dir, file_name)
+
+        print ('Storing in ', self.model_dir)
+
+        if classifier == 'VGG19' or classifier == 'XCEPTION':
+
+            if classifier == 'VGG19':
+                feature_generator = keras.applications.VGG19(weights=None, include_top=False, input_shape=(100,100,3))
+            elif classifier == 'XCEPTION':
+                feature_generator = keras.applications.Xception(weights=None, include_top=False, input_shape=(100,100,3))
+
+            MLP = keras.models.Sequential()
+            MLP.add(keras.layers.Flatten(input_shape=feature_generator.output_shape[1:]))
+            MLP.add(keras.layers.Dense(256, activation='relu', input_dim=(100,100,3)))
+            MLP.add(keras.layers.Dropout(0.5))
+            MLP.add(keras.layers.Dense(1, activation='linear')) # REGRESSION
+
+            self.model = keras.Model(inputs=feature_generator.input, outputs=MLP(feature_generator.output))
+
+            sgd = keras.optimizers.SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
+
+            self.model.compile(loss='mean_squared_error', optimizer=sgd, metrics=['mse', 'mae']) # MSE for regression
+
+        print ('VGG19 Setup complete after', time.time()-t0)
 
 
-    def predict(self, images, results, verbose=False):
+
+    def train(self, x_train, y_train, x_val, y_val, epochs):
+        '''
+        '''
+        t0 = time.time()
+
+        callbacks = [keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=10, verbose=0, mode='auto'), \
+                     keras.callbacks.ModelCheckpoint(self.model_file, monitor='val_loss', verbose=1, save_best_only=True, mode='min')]
+
+        history = self.model.fit(x_train,
+                                 y_train,
+                                 epochs=epochs,
+                                 batch_size=32,
+                                 validation_data=(x_val, y_val),
+                                 callbacks=callbacks,
+                                 verbose=True)
+
+        fit_time = time.time()-t0
+
+        p.dump(history.history, open(os.path.join(self.model_dir, "history.p"), "wb"))
+
+        print('VGG19 Fitting done', time.time()-t0)
+
+        return history
+
+
+
+    def predict(self, segmented_images, verbose=False, model_path=None):
         '''
         Predicts a maskr-cnn results dict using VGG19.
         '''
         t0 = time.time()
 
+        if model_path is None:
+            model_path = self.model_file
+
+        if not self.test_model:
+            self.test_model = load_model(model_path)
+
         all_preds = []
 
-        for j,image in enumerate(images):
-
-            result = results[j]
-
-            scores = result[0]['scores']
-            rois = result[0]['rois'] # rois are y1, x1, y2, x2 
-
-            # sort by score
-            scores2, rois2 = zip(*sorted(zip(scores,rois)))
-            scores = scores2[-4:]
-            rois = rois2[-4:] # top 4
+        for image in segmented_images:
 
             vgg_scores = []
-            from_left_to_right = []
-            isolated_images = []
 
-            for r in rois:
-                
-                cut_image = image[r[0]-10:r[2]+10,r[1]-10:r[3]+10]
-                pad_cut_image = np.zeros((1,100,100,3),dtype=cut_image.dtype)
-                befY = 50-(cut_image.shape[0] // 2)
-                befX = 50-(cut_image.shape[1] // 2)
-                pad_cut_image[0,befY:befY+cut_image.shape[0],befX:befX+cut_image.shape[1]] = cut_image
-
-                pad_cut_image_norm = pad_cut_image / 255.
-                pad_cut_image_norm += np.random.uniform(0, 0.05,(1,100,100,3))
-
-                X_min = pad_cut_image_norm.min()
-                X_max = pad_cut_image_norm.max()
-
-                # scale in place
-                pad_cut_image_norm -= X_min
-                pad_cut_image_norm /= (X_max - X_min)
-
-                pad_cut_image_norm -= .5
-                
+            for image_segment in image:
                 # predict
-                vgg_scores.append(self.model.predict(pad_cut_image_norm)[0])
-                
-                from_left_to_right.append(r[1])
-                
-                isolated_images.append(pad_cut_image_norm)
-                
-                if verbose:
-                    plt.figure()
-                    imshow(pad_cut_image[0])
-                
-            # sort scores back into the original order
-            from_left_to_right,vgg_scores = zip(*sorted(zip(from_left_to_right,vgg_scores)))
+                vgg_scores.append(self.test_model.predict([[image_segment]])[0])
+
+            if verbose:
+                print(image_segment[0])
 
             y_image_pred = []
+
             for v in vgg_scores:
                 y_image_pred.append(v[0]*90)
 
             all_preds.append(y_image_pred)
 
-        print('Prediction complete after', time.time()-t0)
+        print('VGG19 Prediction complete after', time.time()-t0)
 
         return all_preds

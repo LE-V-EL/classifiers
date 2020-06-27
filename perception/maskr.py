@@ -11,14 +11,16 @@ from mrcnn.config import Config
 from mrcnn.utils import Dataset
 from mrcnn import utils
 from mrcnn import visualize
+from keras.callbacks import History
 
 import tensorflow as tf
+import pickle     as p
 
-from . import config as C
+import perception.config as C
 
 class MaskR:
 
-    def __init__(self, name='perception', magicnumber=0, init_with='coco'):
+    def __init__(self, model_dir, init_with='coco'):
 
         t0 = time.time()
 
@@ -27,16 +29,12 @@ class MaskR:
 
         self.mode = 'training'
         self.config = C.TrainingConfig()
-        self.weights_dir = os.path.join(os.path.dirname(__file__), 'weights')
-        self.model_dir = os.path.join(self.weights_dir, name)
+        self.model_dir = model_dir
 
-        if os.path.exists(self.model_dir+str(magicnumber)):
-            # we need to increase the magicnumber until we find a good one
-            while os.path.exists(self.model_dir+str(magicnumber)):
-                magicnumber += 1
+        if not os.path.exists(self.model_dir):
+            os.mkdir(self.model_dir)
 
-        print ('Storing in ', self.model_dir+str(magicnumber))
-        os.mkdir(self.model_dir+str(magicnumber))
+        print ('Storing in ', self.model_dir)
 
         self.model = MaskRCNN(self.mode, self.config, self.model_dir)
 
@@ -44,7 +42,7 @@ class MaskR:
         # imagenet, coco, or last
 
         # Local path to trained weights file
-        COCO_MODEL_PATH = os.path.join(self.weights_dir, "mask_rcnn_coco.h5")
+        COCO_MODEL_PATH = os.path.join(self.model_dir, "mask_rcnn_coco.h5")
         # Download COCO trained weights from Releases if needed
         if not os.path.exists(COCO_MODEL_PATH):
             utils.download_trained_weights(COCO_MODEL_PATH)        
@@ -66,43 +64,62 @@ class MaskR:
         self.testModel = None
 
 
-        print ('Setup complete after', time.time()-t0, 'seconds')
+        print ('MaskRCNN Setup complete after', time.time()-t0, 'seconds')
 
 
 
-    def train(self, dataset_train, dataset_val,history, epochs=1):
+    def train(self, dataset_train, dataset_val, epochs):
         '''
         '''
         t0 = time.time()
 
-        self.model.train(dataset_train, dataset_val,custom_callbacks=[history],
+        history = History()
+
+        self.model.train(dataset_train, dataset_val, custom_callbacks=[history],
                          learning_rate=self.config.LEARNING_RATE,
                          epochs=epochs,
                          layers='heads')
 
+        p.dump(history.history, open(os.path.join(self.model_dir, "history.p"), "wb"))
 
-        print ('Training complete after', time.time()-t0, 'seconds')
+        print ('MaskRCNN Training complete after', time.time()-t0, 'seconds')
+
+        return history
 
 
 
-    def predict(self, image, verbose=True):
+    def predict(self, images, verbose=False, weights_path=None):
         '''
         '''
+
+        t0 = time.time()
+
         if not self.testModel:
 
             model = MaskRCNN(mode="inference", 
                               config=C.TestingConfig(),
                               model_dir=self.model_dir)
 
-            model.load_weights(model.find_last(), by_name=True)
+            weights = None
+            
+            if weights_path is None:
+                weights = model.find_last()
+            else:
+                weights = weights_path
+
+            model.load_weights(weights, by_name=True)
 
             self.testModel = model
 
-        results = self.testModel.detect(image)
+        results = []
+        for image in images:
+            results.append(self.testModel.detect([image])[0])
 
         if verbose:
             r = results[0]
-            visualize.display_instances(image[0], r['rois'], r['masks'], r['class_ids'], 
+            visualize.display_instances(images[0], r['rois'], r['masks'], r['class_ids'], 
                                         ["",""], r['scores'],figsize=(10,10))
+
+        print ('MaskRCNN Prediction complete after', time.time()-t0, 'seconds')
 
         return results
