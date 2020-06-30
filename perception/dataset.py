@@ -20,13 +20,21 @@ class Dataset(utils.Dataset):
         self.load_from_file()
 
 
-    def load_from_file(self):
-        '''
-        '''
-        data = np.load(self.file)
+    @staticmethod
+    def load_from_file_raw(file):
+        data = np.load(file)
 
         # pulling all data out of npz file
         loaded_data = dict(map(lambda component: ( component, data[component] ), data.keys()))
+
+        return loaded_data
+
+
+    def load_from_file(self):
+        '''
+        '''
+
+        loaded_data = Dataset.load_from_file_raw(self.file)
 
         self.max = np.max(loaded_data["image"])
 
@@ -52,8 +60,6 @@ class Dataset(utils.Dataset):
                 image_id   = i,
                 path       = None,
                 **image_data)
-
-        del data
 
         self.prepare()
 
@@ -112,7 +118,6 @@ class Dataset(utils.Dataset):
                             self.class_names, figsize=(8, 8))
 
 
-
     def load_all_images(self):
         '''
         '''
@@ -123,6 +128,14 @@ class Dataset(utils.Dataset):
             images.append(self.load_image(image_id))
 
         return images
+
+    def segment_image_label(self, image_id):
+        info  = self.image_info[image_id]
+        image = info['image']
+        bbox  = info['bbox']
+        image = np.stack((image,)*3, -1)
+        segmented_image = segment_images_label([image], [bbox], flat=True)
+        return segmented_image
 
 
 
@@ -140,9 +153,8 @@ class Dataset(utils.Dataset):
 def segment_images_label(images, bbox, flat=False, verbose=False):
     '''
     '''
-    # the label is truth so the scores are all perfect
-    scores = [[1,1,1,1]] * len(bbox)
-    return __segment_images(images, bbox, scores, flat, verbose)
+
+    return __segment_images(images, bbox, flat=flat, verbose=verbose)
 
 
 def segment_images_network(images, results, flat=False, verbose=False):
@@ -151,12 +163,15 @@ def segment_images_network(images, results, flat=False, verbose=False):
     return __segment_images(images, result['bbox'], result['scores'], flat, verbose)
 
 
-def __segment_images(images, bbox, all_scores, flat=False, verbose=False):
+def __segment_images(images, bbox, all_scores=None, flat=False, verbose=False):
     '''
     flat: instead of a list of lists with segments grouped by origial image, it returns a flat list of the segments
     '''
 
-    t0 = time.time()
+
+    if all_scores is None:
+        #no sort needed
+        all_scores = [[1,1,1,1]] * len(bbox)
 
     segmented_images = []
 
@@ -206,7 +221,7 @@ def __segment_images(images, bbox, all_scores, flat=False, verbose=False):
 
     segmented_images = np.asarray(segmented_images)
 
-    segmented_images = segmented_images / 255.
+    #segmented_images = segmented_images / 255.
     segmented_images += np.random.uniform(0, 0.05, segmented_images.shape)
 
     X_min = segmented_images.min()
@@ -218,9 +233,10 @@ def __segment_images(images, bbox, all_scores, flat=False, verbose=False):
 
     segmented_images -= .5
 
-    print ('Images Segmented', time.time()-t0)
 
     return segmented_images
+
+
 
 def normalize_labels(labels):
 
