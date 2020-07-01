@@ -129,38 +129,36 @@ class Dataset(utils.Dataset):
 
         return images
 
+
+
     def segment_image_label(self, image_id):
+        ''''''
+        image = self.load_image(image_id)
         info  = self.image_info[image_id]
-        image = info['image']
         bbox  = info['bbox']
-        image = np.stack((image,)*3, -1)
-        segmented_image = segment_images_label([image], [bbox], flat=True)
+        segmented_image = segment_image_label(image, bbox, flat=True)
         return segmented_image
 
 
 
-    def segment_dataset_label(self, flat=False, verbose=False):
+    def segment_image_network(self, image_id, result):
         '''
         '''
-        return segment_images_label(self.load_all_images(), self.bbox, flat, verbose)
-
-    def segment_dataset_network(self, results, flat=False, verbose=False):
-        '''
-        '''
-        return segment_images_network(self.load_all_images(), results, flat, verbose)
+        image = self.load_image(image_id)
+        segmented_image = segment_image_network(image, result[0], flat=True)
+        return segmented_image
 
 
-def segment_images_label(images, bbox, flat=False, verbose=False):
+def segment_image_label(image, bbox, flat=False, verbose=False):
     '''
     '''
+    return __segment_images([image], [bbox], flat=flat, verbose=verbose)
 
-    return __segment_images(images, bbox, flat=flat, verbose=verbose)
 
-
-def segment_images_network(images, results, flat=False, verbose=False):
+def segment_image_network(image, result, flat=False, verbose=False):
     '''
     '''
-    return __segment_images(images, result['bbox'], result['scores'], flat, verbose)
+    return __segment_images([image], [result['rois']], [result['scores']], flat, verbose)
 
 
 def __segment_images(images, bbox, all_scores=None, flat=False, verbose=False):
@@ -196,6 +194,8 @@ def __segment_images(images, bbox, all_scores=None, flat=False, verbose=False):
             befX = 50-(cut_image.shape[1] // 2)
             pad_cut_image[0,befY:befY+cut_image.shape[0],befX:befX+cut_image.shape[1]] = cut_image
 
+            pad_cut_image = pad_cut_image / 255.
+
             from_left_to_right.append(r[1])
             
             isolated_images.append(pad_cut_image)
@@ -210,9 +210,6 @@ def __segment_images(images, bbox, all_scores=None, flat=False, verbose=False):
 
         # fixing weird singleton tuple issue
         ordered_isolated_images = [image[0] for image in ordered_isolated_images]
-
-        if len(ordered_isolated_images) < 4:
-            print(j)
 
         if flat:
             segmented_images.extend(ordered_isolated_images)

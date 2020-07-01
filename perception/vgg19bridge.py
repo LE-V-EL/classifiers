@@ -11,27 +11,34 @@ class VGG19Bridge:
     def __init__(self, model_dir=None, classifier='VGG19', file_name="vgg19weights.h5"):
         '''
         '''
-        t0 = time.time()
-
         self.test_model = None
+        self.model      = None
+        self.classifier = classifier
+        self.file_name  = file_name
 
         if model_dir is not None:
             self.model_dir = model_dir
         else:
-            self.model_dir = os.path.join(os.path.dirname(__file__))
+            self.model_dir = os.path.dirname(__file__)
+
+
+
+    def train(self, x_train, y_train, x_val, y_val, epochs):
+
+        t0 = time.time()
 
         if not os.path.exists(self.model_dir):
             os.mkdir(self.model_dir)
 
-        self.model_file = os.path.join(model_dir, file_name)
+        self.model_file = os.path.join(self.model_dir, self.file_name)
 
         print ('Storing in ', self.model_dir)
 
-        if classifier == 'VGG19' or classifier == 'XCEPTION':
+        if self.classifier == 'VGG19' or self.classifier == 'XCEPTION':
 
-            if classifier == 'VGG19':
+            if self.classifier == 'VGG19':
                 feature_generator = keras.applications.VGG19(weights=None, include_top=False, input_shape=(100,100,3))
-            elif classifier == 'XCEPTION':
+            elif self.classifier == 'XCEPTION':
                 feature_generator = keras.applications.Xception(weights=None, include_top=False, input_shape=(100,100,3))
 
             MLP = keras.models.Sequential()
@@ -48,11 +55,6 @@ class VGG19Bridge:
 
         print ('VGG19 Setup complete after', time.time()-t0)
 
-
-
-    def train(self, x_train, y_train, x_val, y_val, epochs):
-        '''
-        '''
         t0 = time.time()
 
         callbacks = [keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=10, verbose=0, mode='auto'), \
@@ -76,16 +78,13 @@ class VGG19Bridge:
 
 
 
-    def predict(self, segmented_images, verbose=False, model_path=None):
+    def predict(self, segmented_images, verbose=False):
         '''
         Predicts a maskr-cnn results dict using VGG19.
         '''
-        t0 = time.time()
-
-        if model_path is None:
-            model_path = self.model_file
 
         if not self.test_model:
+            model_path = os.path.join(self.model_dir, self.file_name)
             self.test_model = load_model(model_path)
 
         all_preds = []
@@ -108,6 +107,5 @@ class VGG19Bridge:
 
             all_preds.append(y_image_pred)
 
-        print('VGG19 Prediction complete after', time.time()-t0)
 
         return all_preds
