@@ -179,8 +179,9 @@ class Classifier:
         labels      = np.array(labels)
         bad_labels  = np.array(bad_labels)
 
+        # not denormalizing the bad results since their length is not consistent
+        # and that breaks the denormalization code.
         results     = d.denormalize_results(results, l_max, l_min)
-        bad_results = d.denormalize_results(bad_results, l_max, l_min)
 
         msqr_error  = mean_squared_error(labels, results)
 
