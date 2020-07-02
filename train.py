@@ -21,6 +21,8 @@ def main():
 
     classifier.train(maskrcnn_epochs=args.m_epoch, vgg19_epochs=args.v_epoch)
 
+    classifier.test()
+
 
 if __name__ == '__main__':
     main()

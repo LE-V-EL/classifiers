@@ -228,8 +228,8 @@ def __segment_images(images, bbox, all_scores=None, flat=False, verbose=False):
     segmented_images -= X_min
     segmented_images /= (X_max - X_min)
 
+    # values to -.5 - .5
     segmented_images -= .5
-
 
     return segmented_images
 
@@ -245,3 +245,12 @@ def normalize_labels(labels):
     labels -= .5
 
     return labels
+
+def denormalize_results(results, l_max, l_min):
+
+    denorm_results = np.array(results)
+    denorm_results += .5
+    denorm_results *= (l_max - l_min)
+    denorm_results += l_min
+
+    return denorm_results

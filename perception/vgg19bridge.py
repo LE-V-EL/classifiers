@@ -103,7 +103,7 @@ class VGG19Bridge:
             y_image_pred = []
 
             for v in vgg_scores:
-                y_image_pred.append(v[0]*90)
+                y_image_pred.append(v[0])
 
             all_preds.append(y_image_pred)
 

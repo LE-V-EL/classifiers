@@ -2,6 +2,8 @@ import os, sys, time
 
 from sklearn.metrics import mean_squared_error
 
+import numpy as np
+
 import perception.maskr       as m
 import perception.vgg19bridge as v
 import perception.dataset     as d
@@ -19,11 +21,12 @@ class Classifier:
 
 
 
-    def initialize(self, model_dir=None):
+    def initialize(self, model_name=None):
         '''
         '''
-        if model_dir is not None:
-            self.model_dir = os.path.join(self.storage_dir, model_dir)
+        if model_name is not None:
+            self.model_dir  = os.path.join(self.storage_dir, model_name)
+            self.model_name = model_name
 
         else:
             self.model_dir = os.path.join(self.storage_dir, "model")
@@ -34,7 +37,8 @@ class Classifier:
                 while os.path.exists(self.model_dir + str(magic_number)):
                     magic_number += 1
 
-            self.model_dir = self.model_dir + str(magic_number)
+            self.model_dir  = self.model_dir + str(magic_number)
+            self.model_name = "model" + str(magic_number)
 
             os.mkdir(self.model_dir)
 
@@ -126,18 +130,19 @@ class Classifier:
 
 
 
-    def test(self, model_dir):
+    def test(self, model_name=None):
         '''
         '''
-        self.initialize(model_dir)
+        # this is the case when you havent been training on this object
+        if model_name is not None:
+            self.initialize(model_name)
 
         m_test = d.Dataset(os.path.join(self.storage_dir, "dataset", "test_0.npz"))
 
         labels = m_test.labels
-        import pprint
-        results = []
 
-        bad_results = []
+        results = []
+        bad_result_ids = []
         
         t0 = time.time()
 
@@ -147,25 +152,47 @@ class Classifier:
 
             prediction = self.predict(image)
 
+            # a result is bad when it has too few stimuli detectted
             if len(prediction[0]) < labels.shape[1]:
-                bad_results.append(image_id)
+                bad_result_ids.append(image_id)
 
             results.extend(prediction)
 
         print ('Predictions completed after', time.time()-t0)
 
-        labels    = labels.tolist()
+        l_max = labels.max()
+        l_min = labels.min()
 
-        if len(bad_results) > 0:
+        labels = labels.tolist()
+
+        bad_results = []
+        bad_labels  = []
+
+        if len(bad_result_ids) > 0:
             # poping the bad results from the back so that we dont 
             # pop the wrong ones
-            bad_results.sort(reverse=True)
-            for image_id in bad_results:
-                labels.pop(image_id)
-                results.pop(image_id)
+            bad_result_ids.sort(reverse=True)
+            for image_id in bad_result_ids:
+                bad_labels.append(labels.pop(image_id))
+                bad_results.append(results.pop(image_id))
 
-        print(len(bad_results))
+        labels      = np.array(labels)
+        bad_labels  = np.array(bad_labels)
 
-        print(mean_squared_error(labels, results))
+        results     = d.denormalize_results(results, l_max, l_min)
+        bad_results = d.denormalize_results(bad_results, l_max, l_min)
+
+        msqr_error  = mean_squared_error(labels, results)
+
+        file = os.path.join(self.model_dir, "results.npz")
+
+        np.savez(file,
+            labels=labels,
+            results=results,
+            bad_labels=labels,
+            bad_results=bad_results,
+            bad_result_ids=np.array(bad_result_ids),
+            msqr_error=msqr_error
+        )
 
 
