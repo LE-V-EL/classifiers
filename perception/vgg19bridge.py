@@ -8,16 +8,28 @@ import pickle as p
 
 class VGG19Bridge:
 
-    def __init__(self, model_dir=None, classifier='VGG19', file_name="vgg19weights.h5"):
+    def __init__(self, model_dir=None, network='VGG19', file_name="weights.h5"):
         '''
         '''
         self.test_model = None
         self.model      = None
-        self.classifier = classifier
+        self.network    = network
         self.file_name  = file_name
 
         if model_dir is not None:
+
             self.model_dir = model_dir
+
+            if self.network == 'VGG19':
+                self.model_dir = os.path.join(self.model_dir, "vgg19")
+            elif self.network == 'RESNET':
+                self.model_dir = os.path.join(self.model_dir, "resnet")
+            elif self.network == 'DENSENET':
+                self.model_dir = os.path.join(self.model_dir, "densenet")
+
+            if not os.path.exists(self.model_dir):
+                os.mkdir(self.model_dir)
+
         else:
             self.model_dir = os.path.dirname(__file__)
 
@@ -34,26 +46,26 @@ class VGG19Bridge:
 
         print ('Storing in ', self.model_dir)
 
-        if self.classifier == 'VGG19' or self.classifier == 'XCEPTION':
+        if self.network == 'VGG19':
+            feature_generator = keras.applications.VGG19(weights=None, include_top=False, input_shape=(100,100,3))
+        elif self.network == 'RESNET':
+            feature_generator = keras.applications.ResNet50(weights=None, include_top=False, input_shape=(100,100,3))
+        elif self.network == 'DENSENET':
+            feature_generator = keras.applications.DenseNet121(weights=None, include_top=False, input_shape=(100,100,3))
 
-            if self.classifier == 'VGG19':
-                feature_generator = keras.applications.VGG19(weights=None, include_top=False, input_shape=(100,100,3))
-            elif self.classifier == 'XCEPTION':
-                feature_generator = keras.applications.Xception(weights=None, include_top=False, input_shape=(100,100,3))
+        MLP = keras.models.Sequential()
+        MLP.add(keras.layers.Flatten(input_shape=feature_generator.output_shape[1:]))
+        MLP.add(keras.layers.Dense(256, activation='relu', input_dim=(100,100,3)))
+        MLP.add(keras.layers.Dropout(0.5))
+        MLP.add(keras.layers.Dense(1, activation='linear')) # REGRESSION
 
-            MLP = keras.models.Sequential()
-            MLP.add(keras.layers.Flatten(input_shape=feature_generator.output_shape[1:]))
-            MLP.add(keras.layers.Dense(256, activation='relu', input_dim=(100,100,3)))
-            MLP.add(keras.layers.Dropout(0.5))
-            MLP.add(keras.layers.Dense(1, activation='linear')) # REGRESSION
+        self.model = keras.Model(inputs=feature_generator.input, outputs=MLP(feature_generator.output))
 
-            self.model = keras.Model(inputs=feature_generator.input, outputs=MLP(feature_generator.output))
+        sgd = keras.optimizers.SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
 
-            sgd = keras.optimizers.SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
+        self.model.compile(loss='mean_squared_error', optimizer=sgd, metrics=['mse', 'mae']) # MSE for regression
 
-            self.model.compile(loss='mean_squared_error', optimizer=sgd, metrics=['mse', 'mae']) # MSE for regression
-
-        print ('VGG19 Setup complete after', time.time()-t0)
+        print (self.network, 'Setup complete after', time.time()-t0)
 
         t0 = time.time()
 
@@ -72,7 +84,7 @@ class VGG19Bridge:
 
         p.dump(history.history, open(os.path.join(self.model_dir, "history.p"), "wb"))
 
-        print('VGG19 Fitting done', time.time()-t0)
+        print(self.network, ' Fitting done', time.time()-t0)
 
         return history
 

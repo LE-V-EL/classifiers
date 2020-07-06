@@ -12,7 +12,9 @@ class Classifier:
 
 
 
-    def __init__(self, storage_dir=None):
+    def __init__(self, storage_dir=None, regres_net="VGG19"):
+
+        self.regres_net = regres_net
 
         if storage_dir is not None:
             self.storage_dir = storage_dir
@@ -53,12 +55,7 @@ class Classifier:
         self.maskrcnn  = m.MaskR(maskrcnn_dir)
 
 
-        vgg19_dir = os.path.join(self.model_dir, "vgg19")
-
-        if not os.path.exists(vgg19_dir):
-            os.mkdir(vgg19_dir)
-
-        self.vgg19 = v.VGG19Bridge(vgg19_dir)
+        self.vgg19 = v.VGG19Bridge(model_dir=self.model_dir, network=self.regres_net)
 
 
 
