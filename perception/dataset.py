@@ -131,21 +131,21 @@ class Dataset(utils.Dataset):
 
 
 
-    def segment_image_label(self, image_id):
+    def segment_image_label(self, image_id, verbose=False):
         ''''''
         image = self.load_image(image_id)
         info  = self.image_info[image_id]
         bbox  = info['bbox']
-        segmented_image = segment_image_label(image, bbox, flat=True)
+        segmented_image = segment_image_label(image, bbox, flat=True, verbose=verbose)
         return segmented_image
 
 
 
-    def segment_image_network(self, image_id, result):
+    def segment_image_network(self, image_id, result, verbose=False):
         '''
         '''
         image = self.load_image(image_id)
-        segmented_image = segment_image_network(image, result[0], flat=True)
+        segmented_image = segment_image_network(image, result[0], flat=True, verbose=verbose)
         return segmented_image
 
 
