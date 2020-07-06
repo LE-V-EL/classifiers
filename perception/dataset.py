@@ -184,11 +184,33 @@ def __segment_images(images, bbox, all_scores=None, flat=False, verbose=False):
         rois = rois2[-4:] # top 4
 
         from_left_to_right = []
+        from_top_to_bottom = []
         isolated_images = []
 
+        order_index = 0
+
+
         for r in rois:
-            
-            cut_image = image[r[0]:r[2],r[1]:r[3]]
+
+            # detecting image boundaries to prevent negative index 
+            # among other issues
+            y1 = r[0] - 10
+            if y1 < 0:
+                y1 = 0
+
+            y2 = r[2] + 10
+            if y2 > image.shape[0]:
+                y2 = image.shape[0]
+
+            x1 = r[1] - 10
+            if x1 < 0:
+                x1 = 0
+
+            x2 = r[3] + 10
+            if x2 > image.shape[1]:
+                x2 = image.shape[1]
+
+            cut_image = image[y1:y2,x1:x2]
             pad_cut_image = np.zeros((1,100,100,3),dtype=cut_image.dtype)
             befY = 50-(cut_image.shape[0] // 2)
             befX = 50-(cut_image.shape[1] // 2)
@@ -197,6 +219,8 @@ def __segment_images(images, bbox, all_scores=None, flat=False, verbose=False):
             pad_cut_image = pad_cut_image / 255.
 
             from_left_to_right.append(r[1])
+
+            from_top_to_bottom.append(r[0])
             
             isolated_images.append(pad_cut_image)
             
@@ -205,8 +229,15 @@ def __segment_images(images, bbox, all_scores=None, flat=False, verbose=False):
                 plt.figure()
                 plt.imshow(pad_cut_image[0])
 
+        order = from_left_to_right
+        # this is the case where the stimuli are nearly the same
+        # x value so we instead order them from top to bottom
+        # (postion_common_scale)
+        if max(from_left_to_right) - min(from_left_to_right) < 10:
+            order = from_top_to_bottom
+
         # sort scores back into the original order
-        _, ordered_isolated_images = zip(*sorted(zip(from_left_to_right, isolated_images), key=lambda x: x[0]))
+        _, ordered_isolated_images = zip(*sorted(zip(order, isolated_images), key=lambda x: x[0]))
 
         # fixing weird singleton tuple issue
         ordered_isolated_images = [image[0] for image in ordered_isolated_images]

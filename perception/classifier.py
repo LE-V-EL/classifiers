@@ -190,7 +190,7 @@ class Classifier:
         np.savez(file,
             labels=labels,
             results=results,
-            bad_labels=labels,
+            bad_labels=bad_labels,
             bad_results=bad_results,
             bad_result_ids=np.array(bad_result_ids),
             msqr_error=msqr_error
