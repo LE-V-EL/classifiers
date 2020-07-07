@@ -236,11 +236,13 @@ def __segment_images(images, bbox, all_scores=None, flat=False, verbose=False):
         if max(from_left_to_right) - min(from_left_to_right) < 10:
             order = from_top_to_bottom
 
-        # sort scores back into the original order
-        _, ordered_isolated_images = zip(*sorted(zip(order, isolated_images), key=lambda x: x[0]))
+        ordered_isolated_images = []
+        if len(isolated_images) > 0:
+            # sort scores back into the original order
+            _, ordered_isolated_images = zip(*sorted(zip(order, isolated_images), key=lambda x: x[0]))
 
-        # fixing weird singleton tuple issue
-        ordered_isolated_images = [image[0] for image in ordered_isolated_images]
+            # fixing weird singleton tuple issue
+            ordered_isolated_images = [image[0] for image in ordered_isolated_images]
 
         if flat:
             segmented_images.extend(ordered_isolated_images)
