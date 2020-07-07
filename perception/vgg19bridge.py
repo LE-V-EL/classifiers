@@ -32,6 +32,8 @@ class VGG19Bridge:
                 self.model_dir = os.path.join(self.model_dir, "resnet")
             elif self.network == 'DENSENET':
                 self.model_dir = os.path.join(self.model_dir, "densenet")
+            elif self.network == 'ALEXNET':
+                self.model_dir = os.path.join(self.model_dir, "alexnet")
 
             if not os.path.exists(self.model_dir):
                 os.mkdir(self.model_dir)

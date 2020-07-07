@@ -23,7 +23,7 @@ def main():
     for x in range(args.runs):
 
         if args.regres_net == "ALL":
-            for net in ["VGG19", "DENSENET"]:
+            for net in ["VGG19", "DENSENET", "ALEXNET"]:
                 classifier = c.Classifier(storage_dir=args.path, regres_net=net)
 
                 classifier.train(maskrcnn_epochs=args.m_epoch, vgg19_epochs=args.r_epoch)
