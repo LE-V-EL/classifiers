@@ -3,8 +3,14 @@ import os, sys, time
 import keras
 from keras.models import load_model
 
-import numpy  as np
 import pickle as p
+from keras import layers
+from keras import optimizers
+import keras.applications
+import keras.callbacks
+import keras
+from keras.models import Sequential
+from keras.layers import Dense, Conv2D, Flatten, MaxPool2D
 
 class VGG19Bridge:
 
@@ -52,6 +58,53 @@ class VGG19Bridge:
             feature_generator = keras.applications.ResNet50(weights=None, include_top=False, input_shape=(100,100,3))
         elif self.network == 'DENSENET':
             feature_generator = keras.applications.DenseNet121(weights=None, include_top=False, input_shape=(100,100,3))
+        elif self.network == 'ALEXNET':
+            alexnet_model = Sequential()
+            alexnet_model.add(
+                Conv2D(filters=96, input_shape=(100, 100, 3), kernel_size=(11, 11), strides=(4, 4), padding="valid",
+                       activation="relu"))
+            alexnet_model.add(MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding="valid"))
+            alexnet_model.add(Conv2D(filters=256, kernel_size=(5, 5), strides=(1, 1), padding="same", activation="relu"))
+            alexnet_model.add(MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding="valid"))
+            alexnet_model.add(Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), padding="same", activation="relu"))
+            alexnet_model.add(Conv2D(filters=384, kernel_size=(3, 3), strides=(1, 1), padding="same", activation="relu"))
+            alexnet_model.add(Conv2D(filters=256, kernel_size=(3, 3), strides=(1, 1), padding="same", activation="relu"))
+            alexnet_model.add(MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding="valid"))
+
+            # Normalize the ALexNet classifier
+
+            alexnet_model.add(Flatten())
+            alexnet_model.add(layers.Dense(256, activation='relu', input_dim=(100, 100, 3)))
+            alexnet_model.add(layers.Dropout(0.5))
+            alexnet_model.add(layers.Dense(1, activation='linear'))
+            sgd_opt = optimizers.SGD(lr=0.0001, decay=1e-6, momentum=0.9, nesterov=True)
+            alexnet_model.compile(loss='mean_squared_error', optimizer=sgd_opt, metrics=['mse', 'mae'])
+
+            print('Alexnet Setup complete after', time.time() - t0)
+
+            t0 = time.time()
+
+            callbacks = [
+                keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=10, verbose=0, mode='auto'), \
+                keras.callbacks.ModelCheckpoint(self.model_file, monitor='val_loss', verbose=1, save_best_only=True,
+                                                mode='min')]
+
+            history = alexnet_model.fit(x_train,
+                                     y_train,
+                                     epochs=epochs,
+                                     batch_size=32,
+                                     validation_data=(x_val, y_val),
+                                     callbacks=callbacks,
+                                     verbose=True)
+
+            fit_time = time.time() - t0
+
+            p.dump(history.history, open(os.path.join(self.model_dir, "history.p"), "wb"))
+
+            print(self.network, ' Fitting done', time.time() - t0)
+
+            return history
+
 
         MLP = keras.models.Sequential()
         MLP.add(keras.layers.Flatten(input_shape=feature_generator.output_shape[1:]))
